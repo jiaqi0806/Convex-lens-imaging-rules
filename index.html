@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main id="simulator-view" class="app-shell">
       <header class="app-header">
         <div class="brand-mark" aria-hidden="true">光</div>
         <div>
@@ -60,7 +60,11 @@
               <p class="section-kicker">操作区</p>
               <h2>调节实验条件</h2>
             </div>
-            <button id="reset-button" class="reset-button" type="button">重置实验</button>
+            <div class="control-actions">
+              <button id="challenge-button" class="module-button challenge-entry-button" type="button">实验挑战</button>
+              <button id="applications-button" class="module-button" type="button">生活中的凸透镜</button>
+              <button id="reset-button" class="reset-button" type="button">重置实验</button>
+            </div>
           </div>
 
           <div class="control-grid">
@@ -124,6 +128,53 @@
         </aside>
       </section>
 
+      <!--
+        挑战模块复用上方的真实光具座与控制器：学生既可拖动蜡烛，也可输入或逐厘米调节数值。
+        任务判定仅读取 getImageData 的结果，不改变原有成像计算和绘制逻辑。
+      -->
+      <section id="challenge-panel" class="challenge-panel" hidden aria-labelledby="challenge-heading">
+        <div class="section-heading challenge-heading">
+          <div>
+            <p class="section-kicker">任务模式</p>
+            <h2 id="challenge-heading">我是小小实验员</h2>
+            <p class="challenge-lead">直接操作上方光具座：拖动蜡烛或调节物距、焦距，系统会实时判定任务是否完成。</p>
+          </div>
+          <div class="challenge-actions">
+            <button id="challenge-restart-button" class="challenge-plain-button" type="button">重新开始</button>
+            <button id="challenge-exit-button" class="challenge-plain-button" type="button">退出挑战</button>
+          </div>
+        </div>
+
+        <div class="challenge-steps" aria-label="挑战进度">
+          <div class="challenge-step is-current" data-challenge-step="0">
+            <span>1</span><p>放大实像</p>
+          </div>
+          <div class="challenge-step" data-challenge-step="1">
+            <span>2</span><p>最大实像</p>
+          </div>
+          <div class="challenge-step" data-challenge-step="2">
+            <span>3</span><p>光屏无像</p>
+          </div>
+        </div>
+
+        <div class="challenge-task-card">
+          <div class="challenge-task-topline">
+            <span id="challenge-task-number">任务 1 / 3</span>
+            <span id="challenge-state-readout">当前：u = 30 cm，f = 10 cm</span>
+          </div>
+          <h3 id="challenge-task-title">调整蜡烛位置，使光屏出现倒立放大的实像</h3>
+          <p id="challenge-task-description">提示：先比较物距与焦距的关系，再在上方拖动蜡烛进行验证。</p>
+          <div class="challenge-target">
+            <span>目标条件</span>
+            <strong id="challenge-target-text">f &lt; u &lt; 2f</strong>
+          </div>
+          <div id="challenge-feedback" class="challenge-feedback" role="status" aria-live="polite">
+            等待操作：请让物距落在一倍焦距和二倍焦距之间。
+          </div>
+          <button id="challenge-next-button" class="challenge-next-button" type="button" hidden>进入下一项任务</button>
+        </div>
+      </section>
+
       <section class="knowledge-strip" aria-labelledby="knowledge-heading">
         <div>
           <p class="section-kicker">实验小贴士</p>
@@ -137,6 +188,129 @@
         <p class="extension-hint">后续可在 <code>app.js</code> 的扩展区加入练习模式、实验记录和其他实验模块。</p>
       </section>
     </main>
+
+    <!--
+      生活应用学习页：与主实验页并列显示，通过 app.js 中的哈希路由切换。
+      这样不引入框架或额外页面文件，也便于以后继续增加独立学习模块。
+    -->
+    <section id="applications-view" class="learning-view" hidden aria-labelledby="applications-title">
+      <header class="learning-header">
+        <div class="learning-header-inner">
+          <button id="applications-back-button" class="back-button" type="button" aria-label="返回实验模拟器">← 返回实验</button>
+          <div>
+            <p class="eyebrow">八年级科学 · 生活探究</p>
+            <h1 id="applications-title">生活中的凸透镜</h1>
+          </div>
+          <span class="learning-label">学以致用</span>
+        </div>
+      </header>
+
+      <main class="learning-shell">
+        <section class="learning-hero" aria-label="学习提示">
+          <p class="section-kicker">从实验走向生活</p>
+          <h2>同一块凸透镜，因物体位置不同而用途不同</h2>
+          <p>点击下方卡片中的互动内容，把“物距—成像特点—实际应用”连起来理解。</p>
+        </section>
+
+        <section class="application-grid" aria-label="四种凸透镜生活应用">
+          <article class="application-card camera-card">
+            <div class="application-card-heading">
+              <div>
+                <p class="application-number">01 · 远景记录</p>
+                <h2>照相机</h2>
+              </div>
+              <div class="application-visual" aria-hidden="true">📷</div>
+            </div>
+            <p>拍摄远处的人物、建筑和风景时，物体通常位于镜头二倍焦距以外，感光元件上得到清晰的实像。</p>
+            <p class="condition-pill"><em>u</em> &gt; 2<em>f</em></p>
+            <div class="application-traits" aria-label="照相机成像特点">
+              <span>倒立</span><span>缩小</span><span>实像</span>
+            </div>
+            <div class="interaction-box">
+              <p class="interaction-question">照相机为什么能拍出清晰缩小的照片？</p>
+              <button id="camera-answer-button" class="text-action" type="button" aria-expanded="false">点击查看答案</button>
+              <p id="camera-answer" class="answer-panel" hidden>镜头相当于凸透镜。当物体在二倍焦距以外时，会在镜头另一侧形成倒立、缩小的实像；相机把感光元件放在像所在的位置，便能记录清晰画面。</p>
+            </div>
+          </article>
+
+          <article class="application-card projector-card">
+            <div class="application-card-heading">
+              <div>
+                <p class="application-number">02 · 放大投射</p>
+                <h2>投影仪</h2>
+              </div>
+              <div class="application-visual" aria-hidden="true">📽️</div>
+            </div>
+            <p>投影仪把投影片或显示芯片放在凸透镜一倍焦距和二倍焦距之间，在远处屏幕上投出较大的画面。</p>
+            <p class="condition-pill"><em>f</em> &lt; <em>u</em> &lt; 2<em>f</em></p>
+            <div class="application-traits" aria-label="投影仪成像特点">
+              <span>倒立</span><span>放大</span><span>实像</span>
+            </div>
+            <fieldset class="interaction-box quiz-box">
+              <legend>投影仪形成的像属于：</legend>
+              <label class="choice-option"><input type="radio" name="projector-answer" value="A" /> A．正立放大虚像</label>
+              <label class="choice-option"><input type="radio" name="projector-answer" value="B" /> B．倒立放大实像</label>
+              <label class="choice-option"><input type="radio" name="projector-answer" value="C" /> C．倒立缩小实像</label>
+              <button id="projector-check-button" class="text-action" type="button">提交判断</button>
+              <p id="projector-feedback" class="quiz-feedback" aria-live="polite"></p>
+            </fieldset>
+          </article>
+
+          <article class="application-card magnifier-card">
+            <div class="application-card-heading">
+              <div>
+                <p class="application-number">03 · 近处观察</p>
+                <h2>放大镜</h2>
+              </div>
+              <div class="application-visual" aria-hidden="true">🔍</div>
+            </div>
+            <p>观察邮票纹理或生物标本时，要让物体位于放大镜一倍焦距以内。眼睛看到的是不能投到光屏上的虚像。</p>
+            <p class="condition-pill"><em>u</em> &lt; <em>f</em></p>
+            <div class="application-traits" aria-label="放大镜成像特点">
+              <span>正立</span><span>放大</span><span>虚像</span>
+            </div>
+            <div class="interaction-box magnifier-explorer">
+              <div class="explorer-heading">
+                <p>动手调节：焦距固定为 <strong>10 cm</strong></p>
+                <output id="magnifier-distance-output" for="magnifier-distance">物距 u = 6 cm</output>
+              </div>
+              <input id="magnifier-distance" type="range" min="2" max="9" step="1" value="6" aria-label="放大镜物距，单位厘米" />
+              <div class="magnifier-window" aria-label="放大镜观察效果示意">
+                <span id="magnifier-word">细胞</span>
+              </div>
+              <p id="magnifier-feedback" class="explorer-feedback">越靠近焦点，虚像越大；此时理论放大倍数约为 2.5 倍。</p>
+            </div>
+          </article>
+
+          <article class="application-card microscope-card">
+            <div class="application-card-heading">
+              <div>
+                <p class="application-number">04 · 微观世界</p>
+                <h2>显微镜</h2>
+              </div>
+              <div class="application-visual" aria-hidden="true">🔬</div>
+            </div>
+            <p>显微镜不是只用一块透镜：物镜先形成放大的实像，目镜再把这个像当作物体，进一步形成放大的虚像。</p>
+            <div class="microscope-flow" aria-label="显微镜的两次放大过程">
+              <span>标本</span><b>→</b><span>物镜</span><b>→</b><span>放大实像</span><b>→</b><span>目镜</span><b>→</b><span>放大虚像</span>
+            </div>
+            <div class="interaction-box">
+              <p class="interaction-question">观察要点</p>
+              <p>显微镜利用多组凸透镜组合成像，所以能帮助我们观察肉眼难以分辨的微小结构。</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="learning-summary" aria-label="生活应用总结">
+          <div>
+            <p class="section-kicker">带走一句话</p>
+            <h2>先看物距，再判断用途</h2>
+          </div>
+          <p>远处拍照：缩小实像；焦点外近处投影：放大实像；焦点内观察：正立放大的虚像。</p>
+          <button class="return-to-simulator" type="button" data-return-to-simulator>回到实验继续验证</button>
+        </section>
+      </main>
+    </section>
 
     <script src="app.js"></script>
   </body>
