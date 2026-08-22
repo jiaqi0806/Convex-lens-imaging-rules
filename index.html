@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="面向八年级学生的凸透镜成像规律互动实验模拟器。"
+    />
+    <title>凸透镜成像规律实验模拟器</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div class="brand-mark" aria-hidden="true">光</div>
+        <div>
+          <p class="eyebrow">八年级科学 · 互动实验</p>
+          <h1>凸透镜成像规律实验模拟器</h1>
+          <p class="subtitle">拖动蜡烛或调节滑杆，观察凸透镜成像的变化。</p>
+        </div>
+        <div class="header-note">浙江教育版 · 透镜和视觉</div>
+      </header>
+
+      <section class="experiment-card" aria-labelledby="experiment-heading">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">实验装置</p>
+            <h2 id="experiment-heading">光具座与动态光路</h2>
+          </div>
+          <div class="live-badge" aria-live="polite">
+            <span class="live-dot"></span>
+            <span id="relation-badge">u &gt; 2f</span>
+          </div>
+        </div>
+
+        <div class="stage-wrap">
+          <svg
+            id="optics-stage"
+            class="optics-stage"
+            viewBox="0 0 1120 600"
+            role="img"
+            aria-label="凸透镜成像实验装置。可以拖动蜡烛改变物距。"
+          ></svg>
+        </div>
+
+        <div class="stage-legend" aria-label="光路图图例">
+          <span><i class="legend-line ray-one"></i>平行主光轴的光线</span>
+          <span><i class="legend-line ray-two"></i>经过光心的光线</span>
+          <span><i class="legend-line ray-three"></i>焦点光线</span>
+          <span><i class="legend-line virtual-line"></i>虚像反向延长线</span>
+        </div>
+        <p class="drag-tip">提示：可直接拖动蜡烛，或在下方调节“物距 u”；手机端可横向滑动查看完整光具座。</p>
+      </section>
+
+      <section class="dashboard" aria-label="实验控制与成像信息">
+        <div class="controls-card">
+          <div class="section-heading compact-heading">
+            <div>
+              <p class="section-kicker">操作区</p>
+              <h2>调节实验条件</h2>
+            </div>
+            <button id="reset-button" class="reset-button" type="button">重置实验</button>
+          </div>
+
+          <div class="control-grid">
+            <label class="range-control" for="object-distance">
+              <span class="control-title">物距 <em>u</em></span>
+              <span class="input-hint">输入数值或逐厘米调节</span>
+              <span class="number-stepper" aria-label="物距数值输入与加减控制">
+                <button class="step-button" type="button" data-step-target="object-distance" data-step-change="-1" aria-label="物距减少 1 厘米">−</button>
+                <input id="object-distance-number" type="number" min="2" max="50" step="1" value="30" inputmode="numeric" aria-label="物距，单位厘米" />
+                <span class="unit">cm</span>
+                <button class="step-button" type="button" data-step-target="object-distance" data-step-change="1" aria-label="物距增加 1 厘米">＋</button>
+              </span>
+              <input id="object-distance" type="range" min="2" max="50" step="1" value="30" />
+              <span class="range-scale"><span>2 cm</span><span>50 cm</span></span>
+            </label>
+
+            <label class="range-control" for="focal-length">
+              <span class="control-title">焦距 <em>f</em></span>
+              <span class="input-hint">输入数值或逐厘米调节</span>
+              <span class="number-stepper" aria-label="焦距数值输入与加减控制">
+                <button class="step-button" type="button" data-step-target="focal-length" data-step-change="-1" aria-label="焦距减少 1 厘米">−</button>
+                <input id="focal-length-number" type="number" min="5" max="15" step="1" value="10" inputmode="numeric" aria-label="焦距，单位厘米" />
+                <span class="unit">cm</span>
+                <button class="step-button" type="button" data-step-target="focal-length" data-step-change="1" aria-label="焦距增加 1 厘米">＋</button>
+              </span>
+              <input id="focal-length" type="range" min="5" max="15" step="1" value="10" />
+              <span class="range-scale"><span>5 cm</span><span>15 cm</span></span>
+            </label>
+          </div>
+
+          <div class="quick-values" aria-label="物距快捷设置">
+            <span>快捷观察：</span>
+            <button type="button" data-u-mode="outside">u &gt; 2f</button>
+            <button type="button" data-u-mode="double">u = 2f</button>
+            <button type="button" data-u-mode="between">f &lt; u &lt; 2f</button>
+            <button type="button" data-u-mode="focus">u = f</button>
+            <button type="button" data-u-mode="inside">u &lt; f</button>
+          </div>
+        </div>
+
+        <aside class="status-card" aria-live="polite" aria-labelledby="status-heading">
+          <p class="section-kicker">实时信息</p>
+          <h2 id="status-heading">当前成像状态</h2>
+
+          <dl class="measurement-list">
+            <div><dt>物距 u</dt><dd id="status-u">30 cm</dd></div>
+            <div><dt>焦距 f</dt><dd id="status-f">10 cm</dd></div>
+            <div><dt>像距 v</dt><dd id="status-v">15 cm</dd></div>
+            <div class="relation-row"><dt>关系</dt><dd id="status-relation">u &gt; 2f</dd></div>
+          </dl>
+
+          <div class="image-result" id="image-result">
+            <p>成像特点</p>
+            <div class="result-tags">
+              <span id="orientation-tag">倒立</span>
+              <span id="size-tag">缩小</span>
+              <span id="reality-tag">实像</span>
+            </div>
+            <p class="result-detail" id="result-detail">光屏可承接清晰的像。</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="knowledge-strip" aria-labelledby="knowledge-heading">
+        <div>
+          <p class="section-kicker">实验小贴士</p>
+          <h2 id="knowledge-heading">判断顺序</h2>
+        </div>
+        <ol>
+          <li>先比较 <em>u</em> 与 <em>f</em>、2<em>f</em> 的大小。</li>
+          <li>再判断像能否用光屏承接：能承接的是实像。</li>
+          <li>最后归纳像的正倒、大小和像距变化。</li>
+        </ol>
+        <p class="extension-hint">后续可在 <code>app.js</code> 的扩展区加入练习模式、实验记录和其他实验模块。</p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
