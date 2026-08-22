@@ -30,6 +30,44 @@ const objectDistanceNumber = document.querySelector("#object-distance-number");
 const focalLengthNumber = document.querySelector("#focal-length-number");
 const resetButton = document.querySelector("#reset-button");
 
+// 生活应用页元素单独集中管理，不参与主实验的 state、光学计算和 SVG 绘制。
+const applications = {
+  simulatorView: document.querySelector("#simulator-view"),
+  view: document.querySelector("#applications-view"),
+  openButton: document.querySelector("#applications-button"),
+  backButton: document.querySelector("#applications-back-button"),
+  cameraAnswerButton: document.querySelector("#camera-answer-button"),
+  cameraAnswer: document.querySelector("#camera-answer"),
+  projectorCheckButton: document.querySelector("#projector-check-button"),
+  projectorFeedback: document.querySelector("#projector-feedback"),
+  magnifierDistance: document.querySelector("#magnifier-distance"),
+  magnifierDistanceOutput: document.querySelector("#magnifier-distance-output"),
+  magnifierWord: document.querySelector("#magnifier-word"),
+  magnifierFeedback: document.querySelector("#magnifier-feedback"),
+};
+
+// 挑战模式只保存任务进度；实验数据仍统一保存在上方的 state 中。
+const challenge = {
+  panel: document.querySelector("#challenge-panel"),
+  openButton: document.querySelector("#challenge-button"),
+  restartButton: document.querySelector("#challenge-restart-button"),
+  exitButton: document.querySelector("#challenge-exit-button"),
+  taskNumber: document.querySelector("#challenge-task-number"),
+  stateReadout: document.querySelector("#challenge-state-readout"),
+  taskTitle: document.querySelector("#challenge-task-title"),
+  taskDescription: document.querySelector("#challenge-task-description"),
+  targetText: document.querySelector("#challenge-target-text"),
+  feedback: document.querySelector("#challenge-feedback"),
+  nextButton: document.querySelector("#challenge-next-button"),
+  steps: document.querySelectorAll("[data-challenge-step]"),
+};
+
+const challengeState = {
+  active: false,
+  currentTask: 0,
+  completed: [false, false, false],
+};
+
 const ui = {
   relationBadge: document.querySelector("#relation-badge"),
   statusU: document.querySelector("#status-u"),
@@ -155,6 +193,93 @@ function getImageData(u, f) {
     reality: "虚像",
     screenMessage: "虚像不能用光屏承接，需要透过凸透镜观察。",
   };
+}
+
+/*
+ * 三项挑战的说明与判定条件。
+ * 每个 isSatisfied 只读取当前 state 和现有成像计算结果，避免把挑战规则写进核心光学函数。
+ */
+const CHALLENGE_TASKS = [
+  {
+    title: "调整蜡烛位置，使光屏出现倒立放大的实像",
+    description: "提示：先比较物距与焦距的关系，再在上方拖动蜡烛进行验证。",
+    target: "f < u < 2f",
+    waiting: "等待操作：请让物距落在一倍焦距和二倍焦距之间。",
+    success: "挑战成功！当前条件：f < u < 2f，光屏上得到倒立、放大的实像。",
+    isSatisfied: (image) => image.kind === "between-f-and-2f",
+  },
+  {
+    title: "让光屏上的像最大",
+    description: "把物体从焦点外逐厘米靠近焦点；要保持物体仍在焦点外，才能在光屏上承接实像。",
+    target: "u = f + 1 cm",
+    waiting: "提示：继续把物体向焦点靠近，试试让物距只比焦距大 1 cm。",
+    success: "挑战成功！在本模拟器的 1 cm 刻度下，物体位于焦点外一格，实像最明显地变大：物近像远像变大。",
+    isSatisfied: (image) => image.reality === "实像" && state.objectDistance === state.focalLength + 1,
+  },
+  {
+    title: "让光屏无法接收到像",
+    description: "尝试让物体进入焦距以内，观察光线的反向延长线和成像特点。",
+    target: "u < f",
+    waiting: "提示：把物体继续向凸透镜靠近，使物距小于焦距。",
+    success: "挑战成功！当前条件：u < f，形成正立、放大的虚像，光屏无法接收到像。",
+    isSatisfied: (image) => image.reality === "虚像",
+  },
+];
+
+/** 根据当前任务进度刷新三个步骤与任务说明。 */
+function updateChallengeProgress(image) {
+  if (!challengeState.active) return;
+
+  const task = CHALLENGE_TASKS[challengeState.currentTask];
+  if (!challengeState.completed[challengeState.currentTask] && task.isSatisfied(image)) {
+    challengeState.completed[challengeState.currentTask] = true;
+  }
+
+  const taskIsComplete = challengeState.completed[challengeState.currentTask];
+  const allCompleted = challengeState.completed.every(Boolean);
+
+  challenge.taskNumber.textContent = `任务 ${challengeState.currentTask + 1} / ${CHALLENGE_TASKS.length}`;
+  challenge.stateReadout.textContent = `当前：u = ${state.objectDistance} cm，f = ${state.focalLength} cm（${image.relation}）`;
+  challenge.taskTitle.textContent = task.title;
+  challenge.taskDescription.textContent = task.description;
+  challenge.targetText.textContent = task.target;
+  challenge.feedback.textContent = taskIsComplete
+    ? (allCompleted ? "全部挑战完成！你已经能用物距和焦距关系解释三种典型现象。" : task.success)
+    : task.waiting;
+  challenge.feedback.classList.toggle("is-success", taskIsComplete);
+  challenge.nextButton.hidden = !taskIsComplete || allCompleted;
+
+  challenge.steps.forEach((step, index) => {
+    const completed = challengeState.completed[index];
+    const current = index === challengeState.currentTask;
+    step.classList.toggle("is-completed", completed);
+    step.classList.toggle("is-current", current && !completed);
+    step.querySelector("span").textContent = completed ? "✓" : String(index + 1);
+  });
+}
+
+/** 开始一轮全新的三项挑战，不修改学生正在探索的 u 与 f 数值。 */
+function startChallenge() {
+  challengeState.active = true;
+  challengeState.currentTask = 0;
+  challengeState.completed = [false, false, false];
+  challenge.panel.hidden = false;
+  updateChallengeProgress(getImageData(state.objectDistance, state.focalLength));
+  requestAnimationFrame(() => challenge.panel.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+}
+
+/** 在完成当前任务后切换到下一任务。 */
+function goToNextChallengeTask() {
+  if (!challengeState.completed[challengeState.currentTask]) return;
+  if (challengeState.currentTask >= CHALLENGE_TASKS.length - 1) return;
+  challengeState.currentTask += 1;
+  updateChallengeProgress(getImageData(state.objectDistance, state.focalLength));
+}
+
+/** 退出任务面板，实验参数与生活应用模块的状态均保持不变。 */
+function exitChallenge() {
+  challengeState.active = false;
+  challenge.panel.hidden = true;
 }
 
 /** 更新右侧实时信息和控制器读数。 */
@@ -614,6 +739,8 @@ function render() {
   drawLens(stage);
   drawImage(stage, image, screen);
   updateDashboard(image);
+  // 仅在挑战开启时刷新进度；核心成像结果不受挑战逻辑影响。
+  updateChallengeProgress(image);
 
   // 手机端光具座采用横向滑动显示；首次打开时自动把镜头附近置于可视区域中央。
   if (window.matchMedia("(max-width: 620px)").matches && !stageWrap.dataset.initialAligned) {
@@ -769,10 +896,113 @@ function applyLaunchParameters() {
   focalLengthInput.value = String(state.focalLength);
 }
 
+// ===== 生活应用模块：独立学习视图与卡片互动 =====
+// 采用 #applications 哈希切换，既像一个新学习页面，又保持单文件离线可运行。
+
+/** 根据 URL 哈希显示主实验页或“生活中的凸透镜”学习页。 */
+function syncLearningRoute() {
+  const showApplications = window.location.hash === "#applications";
+  applications.simulatorView.hidden = showApplications;
+  applications.view.hidden = !showApplications;
+  document.body.classList.toggle("is-learning-page", showApplications);
+
+  if (showApplications) {
+    updateMagnifierExplorer();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
+/** 打开学习页，并写入哈希，便于浏览器后退键返回实验。 */
+function openApplicationsPage() {
+  if (window.location.hash === "#applications") {
+    syncLearningRoute();
+    return;
+  }
+  window.location.hash = "applications";
+}
+
+/** 关闭学习页，恢复实验装置；保留当前已调节的 u 和 f。 */
+function closeApplicationsPage() {
+  if (window.location.hash === "#applications") {
+    window.location.hash = "";
+    return;
+  }
+  syncLearningRoute();
+}
+
+/** 展开照相机问题的解析。 */
+function revealCameraAnswer() {
+  applications.cameraAnswer.hidden = false;
+  applications.cameraAnswerButton.setAttribute("aria-expanded", "true");
+  applications.cameraAnswerButton.textContent = "已显示解析";
+  applications.cameraAnswerButton.disabled = true;
+}
+
+/** 判断投影仪选择题，并给出对应的成像规律解释。 */
+function checkProjectorAnswer() {
+  const selected = document.querySelector('input[name="projector-answer"]:checked');
+  applications.projectorFeedback.classList.remove("is-correct", "is-wrong");
+
+  if (!selected) {
+    applications.projectorFeedback.textContent = "请先选择一个答案。";
+    applications.projectorFeedback.classList.add("is-wrong");
+    return;
+  }
+
+  if (selected.value === "B") {
+    applications.projectorFeedback.textContent = "回答正确！物体位于 f 和 2f 之间时，凸透镜形成倒立、放大的实像，可投到屏幕上。";
+    applications.projectorFeedback.classList.add("is-correct");
+    return;
+  }
+
+  applications.projectorFeedback.textContent = "再想一想：投影仪的画面能投到屏幕上，所以它一定是实像；而凸透镜所成实像是倒立的。";
+  applications.projectorFeedback.classList.add("is-wrong");
+}
+
+/**
+ * 更新放大镜的局部探索。
+ * 固定 f=10 cm，且滑块限定 u<10 cm，以保证学生始终观察正立放大的虚像。
+ */
+function updateMagnifierExplorer() {
+  const focalLength = 10;
+  const objectDistance = Number(applications.magnifierDistance.value);
+  const magnification = focalLength / (focalLength - objectDistance);
+  // 画面只作直观示意，缩放上限避免文字超出圆形放大镜。
+  const visualScale = Math.min(2.55, 1 + magnification * 0.26);
+
+  applications.magnifierDistanceOutput.textContent = `物距 u = ${objectDistance} cm`;
+  applications.magnifierWord.style.transform = `scale(${visualScale})`;
+  applications.magnifierFeedback.textContent = `物距越接近焦点，虚像越大；此时理论放大倍数约为 ${magnification.toFixed(1)} 倍，且仍是正立虚像。`;
+}
+
+/** 绑定生活应用页的全部交互。核心实验事件保持在此模块之外。 */
+function initializeApplicationsModule() {
+  applications.openButton.addEventListener("click", openApplicationsPage);
+  applications.backButton.addEventListener("click", closeApplicationsPage);
+  applications.cameraAnswerButton.addEventListener("click", revealCameraAnswer);
+  applications.projectorCheckButton.addEventListener("click", checkProjectorAnswer);
+  applications.magnifierDistance.addEventListener("input", updateMagnifierExplorer);
+  document.querySelectorAll("[data-return-to-simulator]").forEach((button) => {
+    button.addEventListener("click", closeApplicationsPage);
+  });
+  window.addEventListener("hashchange", syncLearningRoute);
+  syncLearningRoute();
+}
+
+/** 绑定挑战入口和任务切换按钮；学生的操作仍沿用原有实验控件。 */
+function initializeChallengeModule() {
+  challenge.openButton.addEventListener("click", startChallenge);
+  challenge.restartButton.addEventListener("click", startChallenge);
+  challenge.exitButton.addEventListener("click", exitChallenge);
+  challenge.nextButton.addEventListener("click", goToNextChallengeTask);
+}
+
 // ===== 后续扩展入口 =====
-// 1. 练习模式：读取 getImageData 的 relation/orientation/size/reality 进行判题。
-// 2. 实验记录：在 render 后把 state 与 image 推入记录数组并导出为 CSV。
+// 1. 实验记录：在 render 后把 state 与 image 推入记录数组并生成报告内容。
+// 2. 闯关学习：复用 challengeState 与 #applications 的轻量页面切换方式。
 // 3. 其他实验：保留现有 state + calculation + render 的三层结构即可复用页面框架。
 
 applyLaunchParameters();
 render();
+initializeApplicationsModule();
+initializeChallengeModule();
